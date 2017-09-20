@@ -3,7 +3,7 @@ import cv2
 import sys
 import os
 
-cascade_dir = os.path.normpath(os.path.join(cv2.__file__,'../../../../share/opencv/haarcascades/'))
+cascade_dir = './haarcascades/'
 
 # 顔を検出して切り抜く
 def crop_face(file):
@@ -14,7 +14,7 @@ def crop_face(file):
     cascade_e = cv2.CascadeClassifier(os.path.join(cascade_dir, 'haarcascade_eye.xml'))
 
     # 顔検出
-    facerect = cascade_f.detectMultiScale(image_gray, scaleFactor=1.08, minNeighbors=1, minSize=(50, 50))
+    facerect = cascade_f.detectMultiScale(image_gray, scaleFactor=1.11, minNeighbors=2, minSize=(100, 100))
 
     output_dir = "face_images"
     if not os.path.exists(output_dir):
@@ -22,13 +22,13 @@ def crop_face(file):
 
     base = os.path.splitext(os.path.basename(file))[0] + "_"
 
+    #　検出した顔
     if len(facerect) > 0:
         filenum = 0
         for rect in facerect:
             x, y, w, h = rect
-            y_offset = int(h * 0.1)
-            eye_area = image_gray[y + y_offset: y + h, x: x + w]
-            eyes = cascade_e.detectMultiScale(eye_area, 1.05)
+            eye_area = image_gray[y:y+h, x:x+w]
+            eyes = cascade_e.detectMultiScale(eye_area, scaleFactor=1.11, minNeighbors=2)
             eyes = filter(lambda e: (e[0] > w / 2 or e[0] + e[2] < w / 2) and e[1] + e[3] < h / 2, eyes) # 目の位置がおかしいのを除外
 
             if len(eyes) > 0:
