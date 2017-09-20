@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
+import configparser
 import cv2
 import sys
 import os
 
-cascade_dir = './haarcascades/'
+config = configparser.ConfigParser()
+config.read('./config.ini')
+cascade_dir = config.get('default', 'cascade_dir')
+
 
 # 顔を検出して切り抜く
 def crop_face(file):
@@ -14,11 +18,17 @@ def crop_face(file):
     cascade_e = cv2.CascadeClassifier(os.path.join(cascade_dir, 'haarcascade_eye.xml'))
 
     # 顔検出
-    facerect = cascade_f.detectMultiScale(image_gray, scaleFactor=1.11, minNeighbors=2, minSize=(100, 100))
+    face = config['face']
+    minSize = int(face['minSizeWidth'])
+    facerect = cascade_f.detectMultiScale(
+            image_gray,
+            scaleFactor = float(face['scaleFactor']),
+            minNeighbors = int(face['minNeighbors']),
+            minSize = (minSize, minSize),
+        )
 
     output_dir = "face_images"
-    if not os.path.exists(output_dir):
-        os.mkdir(output_dir)
+    os.makedirs(output_dir, exist_ok=True)
 
     base = os.path.splitext(os.path.basename(file))[0] + "_"
 
@@ -28,8 +38,14 @@ def crop_face(file):
         for rect in facerect:
             x, y, w, h = rect
             eye_area = image_gray[y:y+h, x:x+w]
-            eyes = cascade_e.detectMultiScale(eye_area, scaleFactor=1.11, minNeighbors=2)
-            eyes = filter(lambda e: (e[0] > w / 2 or e[0] + e[2] < w / 2) and e[1] + e[3] < h / 2, eyes) # 目の位置がおかしいのを除外
+
+            eye = config['eye']
+            eyes = cascade_e.detectMultiScale(
+                    eye_area,
+                    scaleFactor = float(eye['scaleFactor']),
+                    minNeighbors = int(eye['minNeighbors']),
+                )
+            # eyes = filter(lambda e: (e[0] > w / 2 or e[0] + e[2] < w / 2) and e[1] + e[3] < h / 2, eyes) # 目の位置がおかしいのを除外
 
             if len(eyes) > 0:
                 image_face = image[y:y+h, x:x+h]
@@ -45,5 +61,4 @@ if __name__ == '__main__':
         print ("Usage: $ python " + argvs[0] + " image.jpg")
         quit()
 
-    print(cascade_dir)
     crop_face(argvs[1])
